@@ -26,6 +26,15 @@ jobs:
       - name: Grant gradlew permission
         run: chmod +x gradlew
 
+      - name: Prepare signing
+        run: |
+          if [ -n "${{ secrets.RELEASE_KEY_STORE }}" ]; then
+            echo "${{ secrets.RELEASE_KEY_STORE }}" | base64 --decode > app/key.jks
+            echo "SIGN_PROPERTIES=-PRELEASE_STORE_FILE=key.jks -PRELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }} -PRELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }} -PRELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+          else
+            echo "SIGN_PROPERTIES=-PRELEASE_STORE_FILE=ci-debug.keystore -PRELEASE_STORE_PASSWORD=legado-ci-debug -PRELEASE_KEY_ALIAS=legado-ci-debug -PRELEASE_KEY_PASSWORD=legado-ci-debug" >> "$GITHUB_ENV"
+          fi
+
       - name: Prepare version
         id: version
         run: |
@@ -41,10 +50,7 @@ jobs:
             -Pabi=arm64-v8a \
             -PVERSION_NAME="${{ steps.version.outputs.name }}" \
             -PVERSION_CODE="${{ steps.version.outputs.code }}" \
-            -PRELEASE_STORE_FILE=ci-debug.keystore \
-            -PRELEASE_STORE_PASSWORD=legado-ci-debug \
-            -PRELEASE_KEY_ALIAS=legado-ci-debug \
-            -PRELEASE_KEY_PASSWORD=legado-ci-debug \
+            $SIGN_PROPERTIES \
             --stacktrace
           mkdir -p ci-apks
           APK_PATH=$(find app/build/outputs/apk/app/debug -type f -name '*.apk' | head -n 1)
@@ -56,10 +62,7 @@ jobs:
             -Pabi=arm64-v8a \
             -PVERSION_NAME="${{ steps.version.outputs.name }}" \
             -PVERSION_CODE="${{ steps.version.outputs.code }}" \
-            -PRELEASE_STORE_FILE=ci-debug.keystore \
-            -PRELEASE_STORE_PASSWORD=legado-ci-debug \
-            -PRELEASE_KEY_ALIAS=legado-ci-debug \
-            -PRELEASE_KEY_PASSWORD=legado-ci-debug \
+            $SIGN_PROPERTIES \
             --stacktrace
           APK_PATH=$(find app/build/outputs/apk/app/release -type f -name '*.apk' | head -n 1)
           cp "$APK_PATH" "ci-apks/legado-release_${{ steps.version.outputs.name }}_${{ steps.version.outputs.code }}.apk"
@@ -77,8 +80,9 @@ jobs:
           name: 阅读 CI 构建 ${{ steps.version.outputs.name }}
           body: |
             自动构建: ${{ github.sha }}
-            - debug: io.legado.app.debug(ci-debug.keystore 签名)
-            - release: io.legado.app.Archive(ci-debug.keystore 签名)
+            - debug: io.legado.app.debug
+            - release: io.legado.app.Archive
+            - 签名: 配置 RELEASE_KEY_STORE 时为生产签名,否则 ci-debug
           prerelease: true
           make_latest: false
           files: ci-apks/*.apk
