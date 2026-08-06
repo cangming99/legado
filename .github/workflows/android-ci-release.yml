@@ -69,8 +69,8 @@ jobs:
           name: 阅读 CI 构建 ${{ steps.version.outputs.name }}
           body: |
             自动构建: ${{ github.sha }}
-            - release: io.legado.app.Archive
-            - 签名: 配置 RELEASE_KEY_STORE 时为生产签名,否则 ci-debug
+
+            本次为 Android CI 自动构建版本，包含近期合并的提交，完整变更见下方自动生成的更新日志。
           prerelease: true
           make_latest: false
           generate_release_notes: true
