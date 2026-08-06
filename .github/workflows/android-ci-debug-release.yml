@@ -1,4 +1,4 @@
-name: Android CI Debug + Release
+name: Android CI Release
 
 on:
   workflow_dispatch:
@@ -44,18 +44,6 @@ jobs:
           echo "code=${VERSION_CODE}" >> "$GITHUB_OUTPUT"
           echo "tag=ci-${VERSION_NAME}" >> "$GITHUB_OUTPUT"
 
-      - name: Build debug APK
-        run: |
-          ./gradlew :app:assembleAppDebug \
-            -Pabi=arm64-v8a \
-            -PVERSION_NAME="${{ steps.version.outputs.name }}" \
-            -PVERSION_CODE="${{ steps.version.outputs.code }}" \
-            $SIGN_PROPERTIES \
-            --stacktrace
-          mkdir -p ci-apks
-          APK_PATH=$(find app/build/outputs/apk/app/debug -type f -name '*.apk' | head -n 1)
-          cp "$APK_PATH" "ci-apks/legado-debug_${{ steps.version.outputs.name }}_${{ steps.version.outputs.code }}.apk"
-
       - name: Build release APK
         run: |
           ./gradlew :app:assembleAppRelease \
@@ -64,6 +52,7 @@ jobs:
             -PVERSION_CODE="${{ steps.version.outputs.code }}" \
             $SIGN_PROPERTIES \
             --stacktrace
+          mkdir -p ci-apks
           APK_PATH=$(find app/build/outputs/apk/app/release -type f -name '*.apk' | head -n 1)
           cp "$APK_PATH" "ci-apks/legado-release_${{ steps.version.outputs.name }}_${{ steps.version.outputs.code }}.apk"
 
@@ -80,7 +69,6 @@ jobs:
           name: 阅读 CI 构建 ${{ steps.version.outputs.name }}
           body: |
             自动构建: ${{ github.sha }}
-            - debug: io.legado.app.debug
             - release: io.legado.app.Archive
             - 签名: 配置 RELEASE_KEY_STORE 时为生产签名,否则 ci-debug
           prerelease: true
