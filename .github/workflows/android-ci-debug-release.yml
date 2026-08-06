@@ -1,0 +1,84 @@
+name: Android CI Debug + Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-both:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Grant gradlew permission
+        run: chmod +x gradlew
+
+      - name: Prepare version
+        id: version
+        run: |
+          VERSION_NAME="3.$(TZ=Asia/Shanghai date +%y.%m%d%H%M)"
+          VERSION_CODE=$(($(date -u +%s) / 60))
+          echo "name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
+          echo "code=${VERSION_CODE}" >> "$GITHUB_OUTPUT"
+          echo "tag=ci-${VERSION_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Build debug APK
+        run: |
+          ./gradlew :app:assembleAppDebug \
+            -Pabi=arm64-v8a \
+            -PVERSION_NAME="${{ steps.version.outputs.name }}" \
+            -PVERSION_CODE="${{ steps.version.outputs.code }}" \
+            -PRELEASE_STORE_FILE=ci-debug.keystore \
+            -PRELEASE_STORE_PASSWORD=legado-ci-debug \
+            -PRELEASE_KEY_ALIAS=legado-ci-debug \
+            -PRELEASE_KEY_PASSWORD=legado-ci-debug \
+            --stacktrace
+          mkdir -p ci-apks
+          APK_PATH=$(find app/build/outputs/apk/app/debug -type f -name '*.apk' | head -n 1)
+          cp "$APK_PATH" "ci-apks/legado-debug_${{ steps.version.outputs.name }}_${{ steps.version.outputs.code }}.apk"
+
+      - name: Build release APK
+        run: |
+          ./gradlew :app:assembleAppRelease \
+            -Pabi=arm64-v8a \
+            -PVERSION_NAME="${{ steps.version.outputs.name }}" \
+            -PVERSION_CODE="${{ steps.version.outputs.code }}" \
+            -PRELEASE_STORE_FILE=ci-debug.keystore \
+            -PRELEASE_STORE_PASSWORD=legado-ci-debug \
+            -PRELEASE_KEY_ALIAS=legado-ci-debug \
+            -PRELEASE_KEY_PASSWORD=legado-ci-debug \
+            --stacktrace
+          APK_PATH=$(find app/build/outputs/apk/app/release -type f -name '*.apk' | head -n 1)
+          cp "$APK_PATH" "ci-apks/legado-release_${{ steps.version.outputs.name }}_${{ steps.version.outputs.code }}.apk"
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: legado-ci-apks
+          path: ci-apks/*.apk
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: 阅读 CI 构建 ${{ steps.version.outputs.name }}
+          body: |
+            自动构建: ${{ github.sha }}
+            - debug: io.legado.app.debug(ci-debug.keystore 签名)
+            - release: io.legado.app.Archive(ci-debug.keystore 签名)
+          prerelease: true
+          make_latest: false
+          files: ci-apks/*.apk
