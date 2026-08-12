@@ -6,8 +6,12 @@
         <item name="android:windowBackground">@drawable/bg_welcome_preview</item>
         <item name="android:colorBackground">@color/background</item>
         <item name="android:windowSplashScreenBackground">@color/background</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon_safe</item>
         <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+    </style>
+
+    <!-- 默认入口保留原遮罩图标，自定义图标由系统回退到 Activity 自身图标 -->
+    <style name="AppTheme.Welcome.Default" parent="AppTheme.Welcome">
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon_safe</item>
     </style>
 
 </resources>
