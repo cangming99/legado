@@ -684,6 +684,7 @@ class ReadBookActivity : BaseReadBookActivity(),
         }
         val readerNightModeChanged = readerNightMode != lastReaderNightMode
         lastReaderNightMode = readerNightMode
+        AppLog.put("主题诊断: 阅读页.onConfigurationChanged readerNightMode=$readerNightMode changed=$readerNightModeChanged isNightTheme=${AppConfig.isNightTheme}")
         upSystemUiVisibility()
         binding.readView.upStatusBar()
         if (epubCoreActive) {
@@ -702,6 +703,7 @@ class ReadBookActivity : BaseReadBookActivity(),
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onResume() {
         super.onResume()
+        AppLog.put("主题诊断: 阅读页.onResume isNightTheme=${AppConfig.isNightTheme} lastReader=$lastReaderNightMode")
         ReadBook.readStartTime = System.currentTimeMillis()
         if (bookChanged) {
             bookChanged = false

@@ -162,6 +162,7 @@ class App : Application() {
         if (nightChanged && AppConfig.themeMode == "0") {
             val expectedNight = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
                 Configuration.UI_MODE_NIGHT_YES
+            AppLog.put("主题诊断: App.onConfigurationChanged nightChanged=$nightChanged expectedNight=$expectedNight")
             val generation = themeConfigurationGeneration.incrementAndGet()
             themeConfigurationJob?.cancel()
             themeConfigurationJob = themeConfigurationScope.launch {
